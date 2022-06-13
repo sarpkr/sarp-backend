@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Interval } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class AtronService {
@@ -16,7 +16,7 @@ export class AtronService {
   // ? database 필요하겠는걸?
 
   //todo sr
-  @Interval(6 * 60 * 60 * 1000)
+  @Cron('0 0 0/6 1/1 * ? *')
   vote() {
     console.log('vote');
   }
