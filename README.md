@@ -17,15 +17,24 @@ $ yarn start:dev
 $ yarn start:prod
 ```
 
-## Test
+## env
 
 ```bash
-# unit tests
-$ yarn test
+# development or production
+NODE_ENV=development
 
-# e2e tests
-$ yarn test:e2e
+# api port
+PORT=8000
 
-# test coverage
-$ yarn test:cov
+# postgresql uri
+DB_HOST=
+# postgresql port
+DB_PORT=5432
+# postgresql user
+DB_USER=sarp
+# postgresql user password
+DB_PASS=sarp2022
+#postgresql scheme
+DB_DATABASE=sarp
+
 ```
