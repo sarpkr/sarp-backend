@@ -16,7 +16,7 @@ export class AtronService {
   // ? database 필요하겠는걸?
 
   //todo sr
-  @Cron('0 0 0/6 1/1 * ? *')
+  @Cron('0 0 0/6 1/1 * *')
   vote() {
     console.log('vote');
   }

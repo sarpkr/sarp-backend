@@ -1,0 +1,29 @@
+version: '3.9'
+volumes:
+  sarp-postgres-volume:
+services:
+  app:
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=$DB_PORT
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - '$PORT:$PORT'
+      - '9229:9229'
+    command: npm run start:debug
+    volumes:
+      - .:/app
+  postgres:
+    image: postgres:14.1-alpine3.14
+    ports:
+      - ${DB_PORT}:5432
+    environment:
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASS
+      - POSTGRES_DB=$DB_DATABASE
+    volumes:
+      - sarp-postgres-volume:/var/lib/postgresql/data

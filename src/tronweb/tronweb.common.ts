@@ -9,3 +9,12 @@ export const tronWeb = new TronWeb({
 });
 
 export const getAtronContract = () => tronWeb.contract().at('ERC20_ADDRESS');
+
+// const contract = await getAtronContract();
+// // todo 처음 서비스 시작할때?
+// contract.Claim().watch(async (err, event) => {
+//   await claimHandler(event);
+// });
+// contract.Transfer().watch(async (err, event) => {
+//   await transferHandler(event);
+// });
