@@ -8,9 +8,9 @@ export class BuyTokenEvent extends CoreEntity {
   @IsString()
   contract: string;
 
-  @Column()
-  @IsInt()
-  timestamp: number;
+  @Column({ type: 'bigint' })
+  @IsNumberString()
+  timestamp: string;
 
   @Column()
   @IsInt()

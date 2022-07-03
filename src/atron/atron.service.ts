@@ -1,20 +1,19 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { throws } from 'assert';
 import { CommonService } from 'src/common/common.service';
 import { tronWeb } from 'src/tronweb/tronweb.common';
+import { Repository } from 'typeorm';
+import { StakeLog } from './entities/stake-log.entity';
+import { VoteLog } from './entities/vote-log.entity';
+import { Vote } from './entities/vote.entity';
 
 @Injectable()
 export class AtronService {
   // ? claim rewards
   // tronWeb.transactionBuilder.withdrawBlockRewards(SR_ADDRESS)
-  // ? get SR info api
-  // https://apilist.tronscan.org/api/vote/witness
-  // ? stake
-  // tronWeb.transactionBuilder.freezeBalance(tronWeb.toSun(100), 3, "ENERGY", "4115B95D2D2CBCE1B815BA4D2711A3BEA02CBB37F3", "4115B95D2D2CBCE1B815BA4D2711A3BEA02CBB37F3", 1).then(result => console.log(result));
   // ? unstake
   // tronWeb.transactionBuilder.unfreezeBalance("BANDWIDTH","41BF97A54F4B829C4E9253B26024B1829E1A3B1120","41BF97A54F4B829C4E9253B26024B1829E1A3B1120",1).then(result=>console.log(result))
-  // ? vote
-  // tronWeb.transactionBuilder.vote({"TGj1Ej1qRzL9feLTLhjwgxXF4Ct6GTWg2U":1,"TLyqzVGLV1srkB7dToTAEqgDSfPtXRJZYH":1},"TTSFjEG3Lu9WkHdp4JrWYhbGP6K1REqnGQ",1).then(result=>console.log(result))
-  // ? database 필요하겠는걸?
 
   /**
    * Atron 발급을 하면 해당 트랜잭션을 아이디로 stake를 한다.
@@ -28,34 +27,66 @@ export class AtronService {
 
   private readonly walletAddress = tronWeb.defaultAddress.base58;
 
-  constructor(private readonly commonService: CommonService) {}
+  constructor(
+    private readonly commonService: CommonService,
+    @InjectRepository(Vote)
+    private readonly vote: Repository<Vote>,
+    @InjectRepository(VoteLog)
+    private readonly voteLogs: Repository<VoteLog>,
+    @InjectRepository(StakeLog)
+    private readonly stakeLogs: Repository<StakeLog>,
+  ) {}
 
-  async stake(amount: number, userAddress: string) {
-    // todo 돈을 찾아오기 또는 송금 받기
-
+  async stake(amount: number) {
     const srNode = await this.commonService.getHighestApySrNode();
 
-    const stakeResult = await tronWeb.transactionBuilder.freezeBalance(
+    const stakeTrx = await tronWeb.transactionBuilder.freezeBalance(
       tronWeb.toSun(amount),
       3,
       'BANDWIDTH',
-      this.walletAddress,
-      this.walletAddress,
-      1,
     );
 
-    const voteResult = await tronWeb.transactionBuilder
-      .vote(
-        {
-          [srNode.address]: 1,
-        },
-        this.walletAddress,
-        1,
-      )
-      .then((result) => console.log(result));
+    const signedStakeTrx = await tronWeb.trx.sign(stakeTrx);
+    const stakeReceipt: { txid: string; result: boolean } =
+      await tronWeb.trx.sendRawTransaction(signedStakeTrx);
 
-    console.log(srNode, this.walletAddress);
-    // todo db에 내역 저장
+    const stakeLog = this.stakeLogs.create({
+      txid: stakeReceipt.txid,
+      result: stakeReceipt.result,
+      amount,
+    });
+
+    await this.stakeLogs.save(stakeLog);
+
+    const voteList = await this.vote.find();
+    let vote: Vote;
+    if (voteList.length === 0) vote = this.vote.create({ amount: 0 });
+    else vote = voteList[0];
+
+    vote.amount += Number(amount);
+
+    await this.vote.save(vote);
+
+    const voteTrx = await tronWeb.transactionBuilder.vote({
+      [srNode.address]: vote.amount,
+    });
+
+    const signedVoteTrx = await tronWeb.trx.sign(voteTrx);
+    const voteReceipt: { txid: string; result: boolean } =
+      await tronWeb.trx.sendRawTransaction(signedVoteTrx);
+
+    const voteLog = this.voteLogs.create({
+      txid: voteReceipt.txid,
+      result: voteReceipt.result,
+      amount: vote.amount,
+    });
+
+    await this.voteLogs.save(voteLog);
+
+    return {
+      stakeReceipt,
+      voteReceipt,
+    };
   }
 
   async unStake(amount: number) {

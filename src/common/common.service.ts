@@ -31,18 +31,18 @@ export class CommonService {
     return tronWeb.contract().at(dexAddress);
   }
 
-  // export const getAtronContract = () => tronWeb.contract().at('ERC20_ADDRESS');
-
   async getHighestApySrNode() {
+    const isProduction = this.getIsProduction();
     const response = await this.httpService.axiosRef.get(
-      this.getIsProduction()
+      isProduction
         ? MAINNET_TRONSCAN_WITNESS_API_URL
         : TESTNET_TRONSCAN_WITNESS_API_URL,
     );
-
     const sortedSRList = response.data.data.sort(
       (a, b) => Number(b.annualizedRate) - Number(a.annualizedRate),
     );
+
+    // const srNodes = await tronWeb.trx.listSuperRepresentatives();
 
     const srNode = sortedSRList[0];
 
