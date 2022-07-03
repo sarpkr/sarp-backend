@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import * as Joi from 'joi';
-
 import { AtronModule } from './atron/atron.module';
+import { BuyTokenEvent } from './atron/entities/buy-token-event.entity';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -31,12 +33,14 @@ import { AtronModule } from './atron/atron.module';
         username: configService.get('DB_USER'),
         password: configService.get('DB_PASS'),
         database: configService.get('DB_DATABASE'),
-        entities: [],
+        entities: [BuyTokenEvent],
         logging: true,
         synchronize: true,
       }),
     }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    CommonModule,
     AtronModule,
   ],
   controllers: [],

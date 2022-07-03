@@ -7,6 +7,9 @@ $ yarn
 ## Running the app
 
 ```bash
+# docker-compose
+$ docker compose up
+
 # development
 $ yarn start
 
