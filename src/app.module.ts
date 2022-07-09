@@ -11,9 +11,11 @@ import { StakeLog } from './atron/entities/stake-log.entity';
 import { VoteLog } from './atron/entities/vote-log.entity';
 import { Vote } from './atron/entities/vote.entity';
 import { CommonModule } from './common/common.module';
+import { CronModule } from './cron/cron.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -45,6 +47,7 @@ import { CommonModule } from './common/common.module';
     EventEmitterModule.forRoot(),
     CommonModule,
     AtronModule,
+    CronModule,
   ],
   controllers: [],
   providers: [],

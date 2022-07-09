@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { throws } from 'assert';
 import { CommonService } from 'src/common/common.service';
 import { tronWeb } from 'src/tronweb/tronweb.common';
 import { Repository } from 'typeorm';
@@ -87,6 +86,29 @@ export class AtronService {
       stakeReceipt,
       voteReceipt,
     };
+  }
+
+  async voteOptimalNode() {
+    const srNode = await this.commonService.getHighestApySrNode();
+    const account = await tronWeb.trx.getAccount(tronWeb.defaultAddress.base58);
+    if (account.frozen?.length > 0) {
+      const voteAmount = tronWeb.fromSun(account.frozen[0].frozen_balance);
+      const voteTrx = await tronWeb.transactionBuilder.vote({
+        [srNode.address]: voteAmount,
+      });
+
+      const signedVoteTrx = await tronWeb.trx.sign(voteTrx);
+      const voteReceipt: { txid: string; result: boolean } =
+        await tronWeb.trx.sendRawTransaction(signedVoteTrx);
+
+      const voteLog = this.voteLogs.create({
+        txid: voteReceipt.txid,
+        result: voteReceipt.result,
+        amount: voteAmount,
+      });
+
+      await this.voteLogs.save(voteLog);
+    }
   }
 
   async unStake(amount: number) {
