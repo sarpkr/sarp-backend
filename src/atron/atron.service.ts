@@ -6,6 +6,10 @@ import { Repository } from 'typeorm';
 import { StakeLog } from './entities/stake-log.entity';
 import { VoteLog } from './entities/vote-log.entity';
 import { Vote } from './entities/vote.entity';
+import { BuyTokenEvent } from './entities/buy-token-event.entity';
+import { Ledger } from './entities/ledger.entity';
+import { keys, groupBy } from 'lodash';
+import { getUnixTime } from 'date-fns';
 
 @Injectable()
 export class AtronService {
@@ -34,9 +38,11 @@ export class AtronService {
     private readonly voteLogs: Repository<VoteLog>,
     @InjectRepository(StakeLog)
     private readonly stakeLogs: Repository<StakeLog>,
+    @InjectRepository(BuyTokenEvent)
+    private readonly ledger: Repository<Ledger>,
   ) {}
 
-  async stake(amount: number) {
+  async stake(amount: number, buyer: string) {
     const srNode = await this.commonService.getHighestApySrNode();
 
     const stakeTrx = await tronWeb.transactionBuilder.freezeBalance(
@@ -56,6 +62,10 @@ export class AtronService {
     });
 
     await this.stakeLogs.save(stakeLog);
+    await this.ledger.create({
+      sender: buyer,
+      amount,
+    });
 
     const voteList = await this.vote.find();
     let vote: Vote;
@@ -90,7 +100,7 @@ export class AtronService {
 
   async voteOptimalNode() {
     const srNode = await this.commonService.getHighestApySrNode();
-    const account = await tronWeb.trx.getAccount(tronWeb.defaultAddress.base58);
+    const account = await tronWeb.trx.getAccount(this.walletAddress);
     if (account.frozen?.length > 0) {
       const voteAmount = tronWeb.fromSun(account.frozen[0].frozen_balance);
       const voteTrx = await tronWeb.transactionBuilder.vote({
@@ -110,6 +120,45 @@ export class AtronService {
       await this.voteLogs.save(voteLog);
     }
   }
+
+  async distributeReward() {
+    const reward = await tronWeb.trx.getReward(this.walletAddress);
+    const fee = Math.ceil(reward * 0.01);
+    const events = await this.ledger.find();
+
+    const totalAmountOfShare = this.getTotalAmountOfShare(events);
+    const shareMap = this.getShareMap(events);
+
+    for (const key of Object.keys(shareMap)) {
+      const share = shareMap[key];
+      const rewardForStaker =
+        (reward - fee) * Math.floor((share / totalAmountOfShare) * 100);
+      await this.sendTrx(rewardForStaker);
+    }
+  }
+
+  private getTotalAmountOfShare(events: Ledger[]) {
+    return events.reduce(
+      (acc, event) =>
+        acc +
+        (getUnixTime(event.createdAt) - Math.floor(Date.now() / 1000)) *
+          event.amount,
+      0,
+    );
+  }
+
+  private async getShareMap(events: Ledger[]) {
+    const shareMap = {};
+    const group = groupBy(events, (event) => event.sender);
+
+    for (const sender of Object.keys(group)) {
+      shareMap[sender] = this.getTotalAmountOfShare(group[sender]);
+    }
+
+    return shareMap;
+  }
+
+  private sendTrx(amount: number) {}
 
   async unStake(amount: number) {
     // check be abled stake?
