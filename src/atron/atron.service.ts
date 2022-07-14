@@ -10,6 +10,7 @@ import { BuyTokenEvent } from './entities/buy-token-event.entity';
 import { Ledger } from './entities/ledger.entity';
 import { keys, groupBy } from 'lodash';
 import { getUnixTime } from 'date-fns';
+import { DistributionLogEntity } from './entities/distribution-log.entity';
 
 @Injectable()
 export class AtronService {
@@ -38,8 +39,10 @@ export class AtronService {
     private readonly voteLogs: Repository<VoteLog>,
     @InjectRepository(StakeLog)
     private readonly stakeLogs: Repository<StakeLog>,
-    @InjectRepository(BuyTokenEvent)
+    @InjectRepository(Ledger)
     private readonly ledger: Repository<Ledger>,
+    @InjectRepository(DistributionLogEntity)
+    private readonly distributionLogs: Repository<DistributionLogEntity>,
   ) {}
 
   async stake(amount: number, buyer: string) {
@@ -129,11 +132,17 @@ export class AtronService {
     const totalAmountOfShare = this.getTotalAmountOfShare(events);
     const shareMap = this.getShareMap(events);
 
-    for (const key of Object.keys(shareMap)) {
-      const share = shareMap[key];
+    for (const address of Object.keys(shareMap)) {
+      const share = shareMap[address];
       const rewardForStaker =
         (reward - fee) * Math.floor((share / totalAmountOfShare) * 100);
-      await this.sendTrx(rewardForStaker);
+      const result = await this.sendReward(address, rewardForStaker);
+      const log = this.distributionLogs.create({
+        ...result,
+        address,
+      });
+
+      await this.distributionLogs.save(log);
     }
   }
 
@@ -158,7 +167,20 @@ export class AtronService {
     return shareMap;
   }
 
-  private sendTrx(amount: number) {}
+  private async sendReward(
+    address: string,
+    amount: number,
+  ): Promise<{ result: boolean; txId: string }> {
+    const transaction = await tronWeb.transactionBuilder.sendTrx(
+      address,
+      tronWeb.toSun(amount),
+    );
+    const signed = await tronWeb.trx.sign(transaction);
+    return tronWeb.trx.sendRawTransaction(signed).then((receipt) => ({
+      result: receipt.result,
+      txId: receipt.transaction.txID,
+    }));
+  }
 
   async unStake(amount: number) {
     // check be abled stake?
