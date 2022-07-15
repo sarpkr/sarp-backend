@@ -5,10 +5,8 @@ import { tronWeb } from 'src/tronweb/tronweb.common';
 import { Repository } from 'typeorm';
 import { StakeLog } from './entities/stake-log.entity';
 import { VoteLog } from './entities/vote-log.entity';
-import { Vote } from './entities/vote.entity';
-import { BuyTokenEvent } from './entities/buy-token-event.entity';
 import { Ledger } from './entities/ledger.entity';
-import { keys, groupBy } from 'lodash';
+import { groupBy } from 'lodash';
 import { getUnixTime } from 'date-fns';
 import { DistributionLogEntity } from './entities/distribution-log.entity';
 
@@ -18,8 +16,7 @@ export class AtronService {
 
   constructor(
     private readonly commonService: CommonService,
-    @InjectRepository(Vote)
-    private readonly vote: Repository<Vote>,
+
     @InjectRepository(VoteLog)
     private readonly voteLogs: Repository<VoteLog>,
     @InjectRepository(StakeLog)

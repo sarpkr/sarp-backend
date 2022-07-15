@@ -5,13 +5,16 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import * as Joi from 'joi';
+
 import { AtronModule } from './atron/atron.module';
-import { BuyTokenEvent } from './atron/entities/buy-token-event.entity';
-import { StakeLog } from './atron/entities/stake-log.entity';
-import { VoteLog } from './atron/entities/vote-log.entity';
-import { Vote } from './atron/entities/vote.entity';
 import { CommonModule } from './common/common.module';
 import { CronModule } from './cron/cron.module';
+
+import { BuyTokenEvent } from './atron/entities/buy-token-event.entity';
+import { DistributionLogEntity } from './atron/entities/distribution-log.entity';
+import { Ledger } from './atron/entities/ledger.entity';
+import { StakeLog } from './atron/entities/stake-log.entity';
+import { VoteLog } from './atron/entities/vote-log.entity';
 
 @Module({
   imports: [
@@ -38,7 +41,13 @@ import { CronModule } from './cron/cron.module';
         username: configService.get('DB_USER'),
         password: configService.get('DB_PASS'),
         database: configService.get('DB_DATABASE'),
-        entities: [BuyTokenEvent, Vote, VoteLog, StakeLog],
+        entities: [
+          BuyTokenEvent,
+          VoteLog,
+          StakeLog,
+          Ledger,
+          DistributionLogEntity,
+        ],
         logging: true,
         synchronize: true,
       }),
