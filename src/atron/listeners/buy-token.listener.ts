@@ -94,7 +94,6 @@ export class BuyTokensEventListener {
   async handleButTokensEvent(event: BuyTokenEventType) {
     const tronAmount = tronWeb.fromSun(event.result.amountOfTokens);
 
-    //todo stake를 모아서 할 필요가 있어보임, 수수료 최적화
     const result = await this.atronService.stake(
       tronAmount,
       event.result.buyer,
