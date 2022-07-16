@@ -8,11 +8,22 @@ import { StakeLog } from './entities/stake-log.entity';
 import { VoteLog } from './entities/vote-log.entity';
 import { Vote } from './entities/vote.entity';
 import { BuyTokensEventListener } from './listeners/buy-token.listener';
+import { Ledger } from './entities/ledger.entity';
+import { DistributionLog } from './entities/distribution.log';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
     CommonModule,
-    TypeOrmModule.forFeature([BuyTokenEvent, Vote, VoteLog, StakeLog]),
+    HttpModule,
+    TypeOrmModule.forFeature([
+      BuyTokenEvent,
+      Vote,
+      VoteLog,
+      StakeLog,
+      Ledger,
+      DistributionLog,
+    ]),
   ],
   controllers: [AtronController],
   providers: [AtronService, BuyTokensEventListener],

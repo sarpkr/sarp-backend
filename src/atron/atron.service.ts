@@ -6,11 +6,16 @@ import { Repository } from 'typeorm';
 import { StakeLog } from './entities/stake-log.entity';
 import { VoteLog } from './entities/vote-log.entity';
 import { Vote } from './entities/vote.entity';
-import { BuyTokenEvent } from './entities/buy-token-event.entity';
 import { Ledger } from './entities/ledger.entity';
-import { keys, groupBy } from 'lodash';
+import { groupBy } from 'lodash';
 import { getUnixTime } from 'date-fns';
-import { DistributionLogEntity } from './entities/distribution-log.entity';
+import { DistributionLog } from './entities/distribution.log';
+import {
+  MAINNET_TRONSCAN_WITNESS_API_URL,
+  TESTNET_TRONSCAN_WITNESS_API_URL,
+} from '../common/common.setting';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AtronService {
@@ -41,8 +46,10 @@ export class AtronService {
     private readonly stakeLogs: Repository<StakeLog>,
     @InjectRepository(Ledger)
     private readonly ledger: Repository<Ledger>,
-    @InjectRepository(DistributionLogEntity)
-    private readonly distributionLogs: Repository<DistributionLogEntity>,
+    @InjectRepository(DistributionLog)
+    private readonly distributionLogs: Repository<DistributionLog>,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {}
 
   async stake(amount: number, buyer: string) {
@@ -65,10 +72,11 @@ export class AtronService {
     });
 
     await this.stakeLogs.save(stakeLog);
-    await this.ledger.create({
+    const ledgerElm = await this.ledger.create({
       sender: buyer,
       amount,
     });
+    await this.ledger.save(ledgerElm);
 
     const voteList = await this.vote.find();
     let vote: Vote;
@@ -135,7 +143,7 @@ export class AtronService {
     for (const address of Object.keys(shareMap)) {
       const share = shareMap[address];
       const rewardForStaker =
-        (reward - fee) * Math.floor((share / totalAmountOfShare) * 100);
+        (reward - fee) * Math.floor(share / totalAmountOfShare);
       const result = await this.sendReward(address, rewardForStaker);
       const log = this.distributionLogs.create({
         ...result,
@@ -146,17 +154,40 @@ export class AtronService {
     }
   }
 
+  async withdrawReward() {
+    const reward = await tronWeb.trx.getReward(this.walletAddress);
+    if (reward > 0) {
+      return this.withdrawBalance();
+    }
+
+    return Promise.resolve();
+  }
+
+  private withdrawBalance() {
+    const isProduction = this.commonService.getIsProduction();
+    return this.httpService.axiosRef
+      .post(
+        isProduction
+          ? MAINNET_TRONSCAN_WITNESS_API_URL
+          : TESTNET_TRONSCAN_WITNESS_API_URL,
+        {
+          owner_address: this.walletAddress,
+        },
+      )
+      .then((d) => d.data);
+  }
+
   private getTotalAmountOfShare(events: Ledger[]) {
     return events.reduce(
       (acc, event) =>
         acc +
-        (getUnixTime(event.createdAt) - Math.floor(Date.now() / 1000)) *
+        (Math.floor(Date.now() / 1000) - getUnixTime(event.createdAt)) *
           event.amount,
       0,
     );
   }
 
-  private async getShareMap(events: Ledger[]) {
+  private getShareMap(events: Ledger[]) {
     const shareMap = {};
     const group = groupBy(events, (event) => event.sender);
 
@@ -173,7 +204,7 @@ export class AtronService {
   ): Promise<{ result: boolean; txId: string }> {
     const transaction = await tronWeb.transactionBuilder.sendTrx(
       address,
-      tronWeb.toSun(amount),
+      amount,
     );
     const signed = await tronWeb.trx.sign(transaction);
     return tronWeb.trx.sendRawTransaction(signed).then((receipt) => ({

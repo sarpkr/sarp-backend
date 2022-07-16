@@ -93,12 +93,9 @@ export class BuyTokensEventListener {
   @OnEvent('dex.BuyTokens')
   async handleButTokensEvent(event: BuyTokenEventType) {
     const tronAmount = tronWeb.fromSun(event.result.amountOfTokens);
-
+    const buyerAddress = tronWeb.address.fromHex(event.result.buyer);
     //todo stake를 모아서 할 필요가 있어보임, 수수료 최적화
-    const result = await this.atronService.stake(
-      tronAmount,
-      event.result.buyer,
-    );
+    const result = await this.atronService.stake(tronAmount, buyerAddress);
 
     const buyTokenEvent = this.buyTokenEvents.create({
       contract: event.contract,
@@ -106,7 +103,7 @@ export class BuyTokensEventListener {
       block: event.block,
       amountOfTokens: event.result.amountOfTokens,
       amountOfTRX: event.result.amountOfTRX,
-      buyer: tronWeb.address.fromHex(event.result.buyer),
+      buyer: buyerAddress,
       transaction: event.transaction,
     });
 

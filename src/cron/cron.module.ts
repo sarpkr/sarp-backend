@@ -9,12 +9,21 @@ import { AtronService } from '../atron/atron.service';
 import { AtronModule } from '../atron/atron.module';
 import { CommonService } from '../common/common.service';
 import { HttpModule } from '@nestjs/axios';
+import { Ledger } from '../atron/entities/ledger.entity';
+import { DistributionLog } from '../atron/entities/distribution.log';
 
 @Module({
   imports: [
     HttpModule,
     AtronModule,
-    TypeOrmModule.forFeature([BuyTokenEvent, Vote, VoteLog, StakeLog]),
+    TypeOrmModule.forFeature([
+      BuyTokenEvent,
+      Vote,
+      VoteLog,
+      StakeLog,
+      Ledger,
+      DistributionLog,
+    ]),
   ],
   providers: [RebalanceVoteService, AtronService, CommonService],
 })
