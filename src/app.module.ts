@@ -9,7 +9,6 @@ import { AtronModule } from './atron/atron.module';
 import { BuyTokenEvent } from './atron/entities/buy-token-event.entity';
 import { StakeLog } from './atron/entities/stake-log.entity';
 import { VoteLog } from './atron/entities/vote-log.entity';
-import { Vote } from './atron/entities/vote.entity';
 import { CommonModule } from './common/common.module';
 import { CronModule } from './cron/cron.module';
 import { Ledger } from './atron/entities/ledger.entity';
@@ -42,7 +41,6 @@ import { DistributionLog } from './atron/entities/distribution.log';
         database: configService.get('DB_DATABASE'),
         entities: [
           BuyTokenEvent,
-          Vote,
           VoteLog,
           StakeLog,
           Ledger,

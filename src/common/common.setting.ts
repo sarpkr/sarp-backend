@@ -3,6 +3,9 @@ export const MAINNET_TRONSCAN_WITNESS_API_URL =
 export const TESTNET_TRONSCAN_WITNESS_API_URL =
   'https://shastapi.tronscan.org/api/vote/witness';
 
+export const MAINNET_API_URL = 'https://api.trongrid.io';
+export const TESTNET_API_URL = 'https://api.shasta.trongrid.io';
+
 export const MAINNET_DEX_CONTRACT_ADDRESS = '';
 export const TESTNET_DEX_CONTRACT_ADDRESS =
   'TC88j2C5BkmrQfmZ69X4BjbaQnG73VYUpk';

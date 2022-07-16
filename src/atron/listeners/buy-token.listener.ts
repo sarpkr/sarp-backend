@@ -6,10 +6,7 @@ import { tronWeb } from 'src/tronweb/tronweb.common';
 import { Repository } from 'typeorm';
 import { AtronService } from '../atron.service';
 import { BuyTokenEvent } from '../entities/buy-token-event.entity';
-import { StakeLog } from '../entities/stake-log.entity';
-import { VoteLog } from '../entities/vote-log.entity';
-import { Vote } from '../entities/vote.entity';
-import { BuyTokenEventType } from '../type/buy-token-event.type';
+import { BuyTokenEventType } from '../type/event.type';
 
 @Injectable()
 export class BuyTokensEventListener {
@@ -19,12 +16,6 @@ export class BuyTokensEventListener {
     private readonly atronService: AtronService,
     @InjectRepository(BuyTokenEvent)
     private readonly buyTokenEvents: Repository<BuyTokenEvent>,
-    @InjectRepository(Vote)
-    private readonly vote: Repository<Vote>,
-    @InjectRepository(VoteLog)
-    private readonly voteLogs: Repository<VoteLog>,
-    @InjectRepository(StakeLog)
-    private readonly stakeLogs: Repository<StakeLog>,
   ) {
     this.init();
   }
@@ -94,8 +85,10 @@ export class BuyTokensEventListener {
   async handleButTokensEvent(event: BuyTokenEventType) {
     const tronAmount = tronWeb.fromSun(event.result.amountOfTokens);
     const buyerAddress = tronWeb.address.fromHex(event.result.buyer);
-    //todo stake를 모아서 할 필요가 있어보임, 수수료 최적화
-    const result = await this.atronService.stake(tronAmount, buyerAddress);
+    const result = await this.atronService.stake(
+      tronAmount,
+      buyerAddress,
+    );
 
     const buyTokenEvent = this.buyTokenEvents.create({
       contract: event.contract,

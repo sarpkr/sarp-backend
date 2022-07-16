@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BuyTokenEvent } from '../atron/entities/buy-token-event.entity';
-import { Vote } from '../atron/entities/vote.entity';
 import { VoteLog } from '../atron/entities/vote-log.entity';
 import { StakeLog } from '../atron/entities/stake-log.entity';
 import { RebalanceVoteService } from './rebalance-vote.service';
@@ -18,7 +17,6 @@ import { DistributionLog } from '../atron/entities/distribution.log';
     AtronModule,
     TypeOrmModule.forFeature([
       BuyTokenEvent,
-      Vote,
       VoteLog,
       StakeLog,
       Ledger,
