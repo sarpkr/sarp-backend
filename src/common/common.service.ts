@@ -3,8 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { tronWeb } from 'src/tronweb/tronweb.common';
 import {
+  MAINNET_ATRON_TOKEN_CONTRACT_ADDRESS,
   MAINNET_DEX_CONTRACT_ADDRESS,
   MAINNET_TRONSCAN_WITNESS_API_URL,
+  TESTNET_ATRON_TOKEN_CONTRACT_ADDRESS,
   TESTNET_DEX_CONTRACT_ADDRESS,
   TESTNET_TRONSCAN_WITNESS_API_URL,
 } from './common.setting';
@@ -26,9 +28,20 @@ export class CommonService {
       : TESTNET_DEX_CONTRACT_ADDRESS;
   }
 
+  getATronContractAddress() {
+    return this.getIsProduction()
+      ? MAINNET_ATRON_TOKEN_CONTRACT_ADDRESS
+      : TESTNET_ATRON_TOKEN_CONTRACT_ADDRESS;
+  }
+
   getDexContact() {
     const dexAddress = this.getDexContractAddress();
     return tronWeb.contract().at(dexAddress);
+  }
+
+  getATronContact() {
+    const aTronAddress = this.getATronContractAddress();
+    return tronWeb.contract().at(aTronAddress);
   }
 
   async getHighestApySrNode() {

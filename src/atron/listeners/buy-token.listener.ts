@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
+import BigNumber from 'bignumber.js';
 import { CommonService } from 'src/common/common.service';
 import { tronWeb } from 'src/tronweb/tronweb.common';
 import { Repository } from 'typeorm';
@@ -12,8 +13,10 @@ import { BuyTokenEventType } from '../type/event.type';
 export class BuyTokensEventListener {
   constructor(
     private readonly eventEmitter: EventEmitter2,
+
     private readonly commonService: CommonService,
     private readonly atronService: AtronService,
+
     @InjectRepository(BuyTokenEvent)
     private readonly buyTokenEvents: Repository<BuyTokenEvent>,
   ) {
@@ -84,11 +87,12 @@ export class BuyTokensEventListener {
   @OnEvent('dex.BuyTokens')
   async handleButTokensEvent(event: BuyTokenEventType) {
     const tronAmount = tronWeb.fromSun(event.result.amountOfTokens);
-    const buyerAddress = tronWeb.address.fromHex(event.result.buyer);
-    const result = await this.atronService.stake(
-      tronAmount,
-      buyerAddress,
+    const floorAmount = new BigNumber(tronAmount).integerValue(
+      BigNumber.ROUND_FLOOR,
     );
+    const buyerAddress = tronWeb.address.fromHex(event.result.buyer);
+    if (floorAmount.isGreaterThan(new BigNumber(0)))
+      await this.atronService.stake(floorAmount.toNumber(), buyerAddress);
 
     const buyTokenEvent = this.buyTokenEvents.create({
       contract: event.contract,

@@ -8,7 +8,10 @@ type CommonEventType<T> = {
   resourceNode: string;
 };
 
-export type ExchangeTokenEventType = CommonEventType<any>;
+export type ExchangeTokenEventType = CommonEventType<{
+  buyer: string;
+  tokenAmountToExchange: string;
+}>;
 
 export type BuyTokenEventType = CommonEventType<{
   amountOfTokens: string;

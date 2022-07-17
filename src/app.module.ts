@@ -13,6 +13,7 @@ import { CommonModule } from './common/common.module';
 import { CronModule } from './cron/cron.module';
 import { Ledger } from './atron/entities/ledger.entity';
 import { DistributionLog } from './atron/entities/distribution.log';
+import { ExchangeTokenEvent } from './atron/entities/exchange-token-event.entity';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DistributionLog } from './atron/entities/distribution.log';
           StakeLog,
           Ledger,
           DistributionLog,
+          ExchangeTokenEvent,
         ],
         logging: true,
         synchronize: true,

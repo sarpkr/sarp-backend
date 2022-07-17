@@ -1,21 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { MoreThanOrEqual, Repository } from 'typeorm';
+import { groupBy } from 'lodash';
+import { getUnixTime } from 'date-fns';
+import BigNumber from 'bignumber.js';
+
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Injectable } from '@nestjs/common';
+
 import { CommonService } from 'src/common/common.service';
 import { tronWeb } from 'src/tronweb/tronweb.common';
-import { Repository } from 'typeorm';
+import { MAINNET_API_URL, TESTNET_API_URL } from '../common/common.setting';
+
 import { StakeLog } from './entities/stake-log.entity';
 import { VoteLog } from './entities/vote-log.entity';
 import { Ledger } from './entities/ledger.entity';
-import { groupBy } from 'lodash';
-import { getUnixTime } from 'date-fns';
 import { DistributionLog } from './entities/distribution.log';
-import { HttpService } from '@nestjs/axios';
-import { ConfigService } from '@nestjs/config';
-import {
-  MAINNET_API_URL,
-  MAINNET_TRONSCAN_WITNESS_API_URL, TESTNET_API_URL,
-  TESTNET_TRONSCAN_WITNESS_API_URL
-} from "../common/common.setting";
+import { BuyTokenEvent } from './entities/buy-token-event.entity';
 
 @Injectable()
 export class AtronService {
@@ -32,6 +33,9 @@ export class AtronService {
     private readonly ledger: Repository<Ledger>,
     @InjectRepository(DistributionLog)
     private readonly distributionLogs: Repository<DistributionLog>,
+    @InjectRepository(BuyTokenEvent)
+    private readonly buyTokenEvents: Repository<BuyTokenEvent>,
+
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {}
@@ -171,13 +175,39 @@ export class AtronService {
     }));
   }
 
-  async unStake(amount: number) {
-    const unStakeTrx = await tronWeb.transactionBuilder.unfreezeBalance(
-      'BANDWIDTH',
-      this.walletAddress,
-      this.walletAddress,
-      amount,
+  exchange = async (buyer: string, amount: string) => {
+    const amountBN = new BigNumber(amount);
+    const nowTimeStamp = new Date().getTime();
+
+    const result = await this.buyTokenEvents.find({
+      select: { amountOfTRX: true },
+      where: {
+        buyer,
+        timestamp: MoreThanOrEqual(`${nowTimeStamp - 1000 * 60 * 60 * 24 * 3}`), // 72시간동안 이벤트
+      },
+    });
+
+    const unableToWithdrawAmount = result.reduce(
+      (prev, cur, index) => prev.plus(new BigNumber(cur.amountOfTRX)),
+      new BigNumber(0),
     );
-    const claimTrx = await tronWeb.transactionBuilder.withdrawBlockRewards();
-  }
+
+    const tokenContract = await this.commonService.getATronContact();
+
+    const aTronBallance = await tokenContract.balanceOf(buyer).call();
+    const aTronBallanceBN = new BigNumber(aTronBallance.toString());
+
+    const validRemainAmount =
+      unableToWithdrawAmount.isLessThanOrEqualTo(aTronBallanceBN);
+
+    if (validRemainAmount) {
+      // todo unstake and send tron
+      // const unstakeTrx = await tronWeb.transactionBuilder.unfreezeBalance(
+      //   'BANDWIDTH',
+      //   this.walletAddress,
+      //   this.walletAddress,
+      // );
+      // const signedUnstakeTrx = await tronWeb.trx.sign(unstakeTrx);
+    }
+  };
 }

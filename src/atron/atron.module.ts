@@ -14,6 +14,8 @@ import { BuyTokensEventListener } from './listeners/buy-token.listener';
 import { Ledger } from './entities/ledger.entity';
 import { DistributionLog } from './entities/distribution.log';
 import { HttpModule } from '@nestjs/axios';
+import { ExchangeTokensEventListener } from './listeners/exchange-token.listener';
+import { ExchangeTokenEvent } from './entities/exchange-token-event.entity';
 
 @Module({
   imports: [
@@ -25,10 +27,15 @@ import { HttpModule } from '@nestjs/axios';
       StakeLog,
       Ledger,
       DistributionLog,
+      ExchangeTokenEvent,
     ]),
   ],
   exports: [AtronService],
   controllers: [AtronController],
-  providers: [AtronService, BuyTokensEventListener],
+  providers: [
+    AtronService,
+    BuyTokensEventListener,
+    // ExchangeTokensEventListener,
+  ],
 })
 export class AtronModule {}
